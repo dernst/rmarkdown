@@ -67,8 +67,12 @@ pandoc_convert <- function(input,
     args <- c(args, "--from", from)
 
   # output file
-  if (!is.null(output))
-    args <- c(args, "--output", output)
+  if (!is.null(output)) {
+    output_tempfile = tempfile()
+    on.exit(file.remove(output_tempfile), add=TRUE)
+    cat(sprintf("redirecting pandoc to %s\n", output_tempfile))
+    args <- c(args, "--output", output_tempfile)
+  }
 
   # set pandoc stack size
   stack_size <- getOption("pandoc.stack.size", default = "512m")
@@ -98,6 +102,11 @@ pandoc_convert <- function(input,
   })
   if (result != 0)
     stop("pandoc document conversion failed with error ", result, call. = FALSE)
+
+  if(!is.null(output)) {
+    cat(sprintf("copying %s to %s\n", output_tempfile, output))
+    file.copy(output_tempfile, output, overwrite=TRUE)
+  }
 
   invisible(NULL)
 }
